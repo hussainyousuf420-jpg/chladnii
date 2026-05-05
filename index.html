@@ -15,7 +15,7 @@
 <script>
 const cv=document.getElementById('c');
 const ctx=cv.getContext('2d');
-const PI=Math.PI,MIN=0.0005,NUM=4000,V=0.004;
+const PI=Math.PI,MIN=0.0005,NUM=8000,V=0.004;
 const dpr=Math.min(devicePixelRatio||1,2);
 let W,H;
 
@@ -27,9 +27,6 @@ function newTarget(){return{m:rInt(1,16),n:rInt(1,16),a:rA(),b:rA()};}
 let cm=2,cn=3,ca=1,cb=-1;
 let tgt=newTarget();
 const LERP=0.005;
-
-let mx=0.5,my=0.5,mActive=false;
-const MR=0.12,MS=0.006;
 
 function resize(){
   W=window.innerWidth;H=window.innerHeight;
@@ -45,27 +42,18 @@ function init(){
 }
 function rand(){return Math.random()*2-1;}
 
-// auto-advance every 8 seconds
-let lastChange=Date.now();
-const INTERVAL=8000;
-
 function tick(){
-  if(Date.now()-lastChange>INTERVAL){
-    tgt=newTarget();
-    lastChange=Date.now();
-  }
-
   cm+=(tgt.m-cm)*LERP;
   cn+=(tgt.n-cn)*LERP;
   ca+=(tgt.a-ca)*LERP;
   cb+=(tgt.b-cb)*LERP;
 
-  ctx.fillStyle='#1e1e1e';
-  ctx.fillRect(0,0,W,H);
-
-  // sharp 1px white pixels via imageData
-  const id=ctx.getImageData(0,0,W*dpr,H*dpr);
+  const pw=W*dpr,ph=H*dpr;
+  const id=ctx.getImageData(0,0,pw,ph);
   const d=id.data;
+
+  // clear
+  for(let i=0;i<d.length;i+=4){d[i]=30;d[i+1]=30;d[i+2]=30;d[i+3]=255;}
 
   for(let i=0;i<NUM;i++){
     let x=xs[i],y=ys[i];
@@ -75,57 +63,29 @@ function tick(){
     if(amp<MIN)amp=MIN;
     x+=rand()*amp;
     y+=rand()*amp;
-
-    if(mActive){
-      const dx=x-mx,dy=y-my;
-      const dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist<MR&&dist>0.0001){
-        const force=MS*(1-dist/MR);
-        x+=dx/dist*force;
-        y+=dy/dist*force;
-      }
-    }
-
     if(x<0)x=-x; if(x>1)x=2-x;
     if(y<0)y=-y; if(y>1)y=2-y;
     xs[i]=x<0?0:x>1?1:x;
     ys[i]=y<0?0:y>1?1:y;
-
-    // write sharp pixel directly to imageData
-    const px=Math.round(x*W*dpr);
-    const py=Math.round(y*H*dpr);
-    if(px>=0&&px<W*dpr&&py>=0&&py<H*dpr){
-      const idx=(py*W*dpr+px)*4;
+    const px=Math.round(x*pw);
+    const py=Math.round(y*ph);
+    if(px>=0&&px<pw&&py>=0&&py<ph){
+      const idx=(py*pw+px)*4;
       d[idx]=255;d[idx+1]=255;d[idx+2]=255;d[idx+3]=255;
     }
   }
 
   ctx.putImageData(id,0,0);
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-
-  if(mActive){
-    const gx=mx*W,gy=my*H,gr=MR*W;
-    ctx.beginPath();ctx.arc(gx,gy,gr,0,PI*2);
-    ctx.strokeStyle='rgba(255,255,255,0.05)';
-    ctx.lineWidth=1;ctx.stroke();
-    ctx.beginPath();ctx.arc(gx,gy,2.5,0,PI*2);
-    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
-  }
-
   requestAnimationFrame(tick);
 }
 
 window.addEventListener('message',function(e){
   if(e.data&&e.data.type==='chladni-stage'){
     tgt=newTarget();
-    lastChange=Date.now();
   }
 });
 
-window.addEventListener('mousemove',function(e){mx=e.clientX/W;my=e.clientY/H;mActive=true;});
-window.addEventListener('mouseleave',function(){mActive=false;});
 window.addEventListener('resize',function(){ctx.setTransform(1,0,0,1,0,0);resize();});
-
 resize();init();tick();
 </script>
 </body>
