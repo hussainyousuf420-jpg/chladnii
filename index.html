@@ -13,20 +13,18 @@
 <body>
 <canvas id="c"></canvas>
 <script>
+const STAGES=[
+  {m:1,n:1,a:-2,b:2},
+  {m:3,n:2,a:-2,b:-2},
+  {m:3,n:5,a:-2,b:-2},
+  {m:8,n:6,a:2,b:-2},
+];
+
 const cv=document.getElementById('c');
 const ctx=cv.getContext('2d');
-const PI=Math.PI,MIN=0.0005,NUM=6000,V=0.004;
+const PI=Math.PI,MIN=0.002,NUM=4000,V=0.018;
 const dpr=Math.min(devicePixelRatio||1,2);
-let W,H;
-
-const aVals=[-2,-1,1,2];
-function rInt(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function rA(){return aVals[Math.floor(Math.random()*4)];}
-function newTarget(){return{m:rInt(1,16),n:rInt(1,16),a:rA(),b:rA()};}
-
-let cm=2,cn=3,ca=1,cb=-1;
-let tgt=newTarget();
-const LERP=0.005;
+let W,H,m=1,n=1,a=-2,b=2;
 
 function resize(){
   W=window.innerWidth;H=window.innerHeight;
@@ -37,53 +35,52 @@ function resize(){
 
 const xs=new Float32Array(NUM);
 const ys=new Float32Array(NUM);
+
 function init(){
-  for(let i=0;i<NUM;i++){xs[i]=Math.random()*.9+.05;ys[i]=Math.random()*.9+.05;}
+  for(let i=0;i<NUM;i++){
+    xs[i]=Math.random()*0.9+0.05;
+    ys[i]=Math.random()*0.9+0.05;
+  }
 }
+
 function rand(){return Math.random()*2-1;}
 
 function tick(){
-  cm+=(tgt.m-cm)*LERP;
-  cn+=(tgt.n-cn)*LERP;
-  ca+=(tgt.a-ca)*LERP;
-  cb+=(tgt.b-cb)*LERP;
-
-  const pw=W*dpr,ph=H*dpr;
-  const id=ctx.getImageData(0,0,pw,ph);
-  const d=id.data;
-
-  for(let i=0;i<d.length;i+=4){d[i]=30;d[i+1]=30;d[i+2]=30;d[i+3]=255;}
-
+  ctx.fillStyle='#1e1e1e';
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,0.9)';
   for(let i=0;i<NUM;i++){
     let x=xs[i],y=ys[i];
-    const eq=ca*Math.sin(PI*cn*x)*Math.sin(PI*cm*y)
-             +cb*Math.sin(PI*cm*x)*Math.sin(PI*cn*y);
+    const eq=a*Math.sin(PI*n*x)*Math.sin(PI*m*y)
+             +b*Math.sin(PI*m*x)*Math.sin(PI*n*y);
     let amp=V*Math.abs(eq);
     if(amp<MIN)amp=MIN;
-    x+=rand()*amp;
-    y+=rand()*amp;
+    x+=rand()*amp; y+=rand()*amp;
     if(x<0)x=-x; if(x>1)x=2-x;
     if(y<0)y=-y; if(y>1)y=2-y;
     xs[i]=x<0?0:x>1?1:x;
     ys[i]=y<0?0:y>1?1:y;
-    const px=Math.round(x*pw);
-    const py=Math.round(y*ph);
-    if(px>=0&&px<pw&&py>=0&&py<ph){
-      const idx=(py*pw+px)*4;
-      d[idx]=255;d[idx+1]=255;d[idx+2]=255;d[idx+3]=255;
-    }
+    ctx.fillRect(x*W-0.8,y*H-0.8,1.6,1.6);
   }
-
-  ctx.putImageData(id,0,0);
   requestAnimationFrame(tick);
 }
 
 window.addEventListener('message',function(e){
-  if(e.data&&e.data.type==='chladni-stage') tgt=newTarget();
+  if(e.data&&e.data.type==='chladni-stage'){
+    const s=STAGES[Math.min(Math.max(e.data.stage,0),3)];
+    m=s.m;n=s.n;a=s.a;b=s.b;
+    init();
+  }
 });
 
-window.addEventListener('resize',function(){ctx.setTransform(1,0,0,1,0,0);resize();});
-resize();init();tick();
+window.addEventListener('resize',function(){
+  ctx.setTransform(1,0,0,1,0,0);
+  resize();
+});
+
+resize();
+init();
+tick();
 </script>
 </body>
 </html>
