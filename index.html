@@ -52,7 +52,6 @@ function tick(){
   const id=ctx.getImageData(0,0,pw,ph);
   const d=id.data;
 
-  // clear
   for(let i=0;i<d.length;i+=4){d[i]=30;d[i+1]=30;d[i+2]=30;d[i+3]=255;}
 
   for(let i=0;i<NUM;i++){
@@ -80,9 +79,7 @@ function tick(){
 }
 
 window.addEventListener('message',function(e){
-  if(e.data&&e.data.type==='chladni-stage'){
-    tgt=newTarget();
-  }
+  if(e.data&&e.data.type==='chladni-stage') tgt=newTarget();
 });
 
 window.addEventListener('resize',function(){ctx.setTransform(1,0,0,1,0,0);resize();});
